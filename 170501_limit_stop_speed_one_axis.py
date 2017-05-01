@@ -3,7 +3,7 @@ import ArcusDeviceModified as ADM
 
 class TheFrame(wx.Frame):
 	def __init__(self, parent, id=wx.ID_ANY, title='',
-	             pos=wx.DefaultPosition, size=(300,200),
+	             pos=wx.DefaultPosition, size=(300,300),
 	             style=wx.DEFAULT_FRAME_STYLE, name='TheFrame'):
 		super(TheFrame, self).__init__(parent, id, title,
 		                               pos, size, style, name)
@@ -17,12 +17,18 @@ class TheFrame(wx.Frame):
 		self.active_motor_checkbox = wx.CheckBox(self, wx.ID_ANY,
 		                                    label='Enable Motor?')
 
+		self.speed_label = wx.StaticText(self, wx.ID_ANY,
+		                                 label='Motor Speed (mm/s)')
+		self.speed_input = wx.TextCtrl(self, wx.ID_ANY)
+
 		self.limit_button = wx.Button(self, wx.ID_ANY,
 		                         label='Go To Minus Limit')
 		self.stop_button = wx.Button(self, wx.ID_ANY,
 		                        label='STOP!')
 
 		sizer.Add(self.active_motor_checkbox, 0, wx.ALL, 5)
+		sizer.Add(self.speed_label, 0, wx.ALL, 5)
+		sizer.Add(self.speed_input, 0, wx.ALL, 5)
 		sizer.Add(self.limit_button, 0, wx.ALL, 5)
 		sizer.Add(self.stop_button, 0, wx.ALL, 5)
 
@@ -48,6 +54,15 @@ class TheFrame(wx.Frame):
 			del self.motor
 			del self.device
 
+	def SpeedInput(self, event):
+		"""
+		This function deals with the motor speed text control and has two
+		main jobs.
+		1. When the motor is activated, this field should be populated with 
+			the default speed.
+		2. When the user inputs a value, this function changes the motor 
+			settings to update the speed.
+		"""
 
 	def OnLimitButton(self, event):
 		"""
