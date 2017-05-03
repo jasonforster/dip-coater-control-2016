@@ -14,32 +14,41 @@ class TheFrame(wx.Frame):
 		# Layout the buttons
 		sizer = wx.BoxSizer(wx.VERTICAL)
 
-		self.active_motor_checkbox = wx.CheckBox(self, wx.ID_ANY,
-		                                    label='Enable Motor?')
-
-		self.speed_label = wx.StaticText(self, wx.ID_ANY,
-		                                 label='Motor Speed (mm/s)')
+		self.active_motor_checkbox = wx.CheckBox(self, wx.ID_ANY, label='Enable Motor?')
+		self.speed_label = wx.StaticText(self, wx.ID_ANY, label='Motor Speed (mm/s)')
 		self.speed_input = wx.TextCtrl(self, wx.ID_ANY)
-
-		self.limit_button = wx.Button(self, wx.ID_ANY,
-		                         label='Go To Minus Limit')
-		self.stop_button = wx.Button(self, wx.ID_ANY,
-		                        label='STOP!')
+		self.position_label = wx.StaticText(self, wx.ID_ANY, label='Motor Position (mm)')
+		self.position_indicator = wx.TextCtrl(self, wx.ID_ANY)
+		self.limit_button = wx.Button(self, wx.ID_ANY, label='Go To Minus Limit')
+		self.stop_button = wx.Button(self, wx.ID_ANY,   label='STOP!')
 
 		sizer.Add(self.active_motor_checkbox, 0, wx.ALL, 5)
 		sizer.Add(self.speed_label, 0, wx.ALL, 5)
 		sizer.Add(self.speed_input, 0, wx.ALL, 5)
+		sizer.Add(self.position_label, 0, wx.ALL, 5)
+		sizer.Add(self.position_indicator, 0, wx.ALL, 5)
 		sizer.Add(self.limit_button, 0, wx.ALL, 5)
 		sizer.Add(self.stop_button, 0, wx.ALL, 5)
 
 		self.SetSizer(sizer)
 
-		# Bind events to the buttons
+		# Bind events to the buttons and input boxes
 		self.Bind(wx.EVT_CHECKBOX, self.OnCheckActivate, self.active_motor_checkbox)
 		self.Bind(wx.EVT_TEXT_ENTER, self.OnSpeedInput, self.speed_input)
 		self.Bind(wx.EVT_BUTTON, self.OnLimitButton, self.limit_button)
 		self.Bind(wx.EVT_BUTTON, self.OnStopButton, self.stop_button)
 
+
+	def GetPosition_mm(self):
+		"""
+		Function for getting the current motor position in mm.
+		The position is returned as a float with mm as the units.
+
+		"""
+		position_steps = self.motor.device.Write('PX')
+		position_mm = float(position_steps)/800
+
+		return position_mm
 
 	def OnCheckActivate(self, event):
 		"""
@@ -85,6 +94,7 @@ class TheFrame(wx.Frame):
 		if motor_active:
 			self.PushStatusText('Limit sequence activated.')
 			self.motor.GoToLimit(polarity='-', wait=False)
+
 		else:
 			self.PushStatusText('No active motor. No sequence activated.')
 
@@ -97,6 +107,8 @@ class TheFrame(wx.Frame):
 			self.PushStatusText('Stop sequence requested!')
 			# do something to interrupt the motor and stop it immediately!
 			self.motor.Abort()
+			position = float(self.motor.device.Write('PY'))/800
+			self.position_indicator.ChangeValue(str(position))
 		else:
 			self.PushStatusText('No active motor to stop.')
 
@@ -123,6 +135,8 @@ class TheFrame(wx.Frame):
 			self.PushStatusText('motor activated on %s axis' % motor.axis)
 			print('current motor high speed is %s steps/s' % motor.hspd)
 			self.speed_input.ChangeValue(str(motor.hspd/800))
+			position = float(motor.device.Write('PY'))/800
+			self.position_indicator.ChangeValue(str(position))
 		else:
 			print('axis %s did not turn on' % motor.axis)
 
