@@ -94,6 +94,16 @@ class TheFrame(wx.Frame):
 		if motor_active:
 			self.PushStatusText('Limit sequence activated.')
 			self.motor.GoToLimit(polarity='-', wait=False)
+			#Test to see if the motor is still moving. If it is, the position_indicator
+			# is updated until it stops.
+			is_moving = self.motor.IsMoving()
+			# while is_moving:
+			# 	print('motor is moving')
+			# 	position = float(self.motor.device.Write('PY'))/800
+			# 	self.position_indicator.ChangeValue(str(position))
+			# 	# self.position_indicator.Refresh()
+			# 	is_moving = self.motor.IsMoving()
+			# print('motor stopped')
 
 		else:
 			self.PushStatusText('No active motor. No sequence activated.')
