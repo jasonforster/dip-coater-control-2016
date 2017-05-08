@@ -4,11 +4,11 @@ import ArcusDeviceModified as ADM
 #### this whole thing is screwed up. need to go eat lunch and try again. 27Jan201712:45
 ### here is where we create the functions that the GUI buttons will call
 def connect_to_device():
-	arc = ADM.ArcusDevice()
-	return arc
+	device = ADM.ArcusDevice()
+	return device
 
 def close_device_connection(device):
-	arc.Close()
+	device.Close()
 
 def create_motor(device):
 	motor_id = ADM.ArcusStepperChannel(device,

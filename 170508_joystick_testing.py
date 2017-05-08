@@ -3,7 +3,7 @@ import ArcusDeviceModified as ADM
 
 class TheFrame(wx.Frame):
 	def __init__(self, parent, id=wx.ID_ANY, title='',
-	             pos=wx.DefaultPosition, size=(300,200),
+	             pos=wx.DefaultPosition, size=(300,300),
 	             style=wx.DEFAULT_FRAME_STYLE, name='TheFrame'):
 		super(TheFrame, self).__init__(parent, id, title,
 		                               pos, size, style, name)
@@ -14,23 +14,25 @@ class TheFrame(wx.Frame):
 		# Layout the buttons
 		sizer = wx.BoxSizer(wx.VERTICAL)
 
-		self.active_motor_checkbox = wx.CheckBox(self, wx.ID_ANY,
-		                                    label='Enable Motor?')
-
-		self.limit_button = wx.Button(self, wx.ID_ANY,
-		                         label='Go To Minus Limit')
-		self.stop_button = wx.Button(self, wx.ID_ANY,
-		                        label='STOP!')
+		self.active_motor_checkbox = wx.CheckBox(self, wx.ID_ANY, label='Enable Motor?')
+		self.speed_label = wx.StaticText(self, wx.ID_ANY, label='Motor Speed (mm/s)')
+		self.speed_input = wx.TextCtrl(self, wx.ID_ANY)
+		self.stop_button = wx.Button(self, wx.ID_ANY,   label='STOP!')
+		self.up_button = wx.Button(self, wx.ID_ANY, label='UP')
+		self.down_button = wx.Button(self, wx.ID_ANY, label='DOWN')
 
 		sizer.Add(self.active_motor_checkbox, 0, wx.ALL, 5)
-		sizer.Add(self.limit_button, 0, wx.ALL, 5)
+		sizer.Add(self.speed_label, 0, wx.ALL, 5)
+		sizer.Add(self.speed_input, 0, wx.ALL, 5)
 		sizer.Add(self.stop_button, 0, wx.ALL, 5)
+		sizer.Add(self.up_button, 0, wx.ALL, 5)
+		sizer.Add(self.down_button, 0, wx.ALL, 5)
 
 		self.SetSizer(sizer)
 
-		# Bind events to the buttons
+		# Bind events to the buttons and input boxes
 		self.Bind(wx.EVT_CHECKBOX, self.OnCheckActivate, self.active_motor_checkbox)
-		self.Bind(wx.EVT_BUTTON, self.OnLimitButton, self.limit_button)
+		self.Bind(wx.EVT_TEXT_ENTER, self.OnSpeedInput, self.speed_input)
 		self.Bind(wx.EVT_BUTTON, self.OnStopButton, self.stop_button)
 
 
@@ -48,22 +50,22 @@ class TheFrame(wx.Frame):
 			del self.motor
 			del self.device
 
-
-	def OnLimitButton(self, event):
+	def OnSpeedInput(self, event):
 		"""
-		There are a number of things that should occur when this function
-		is called.
-		1. There should be a check that there is an active stepper channel.
-		2. If the check in step one is passed, the method to move the motor to 
-			its minus limit should be called.
+		This function deals with the motor speed text control
+		1. When the user inputs a value, this function changes the motor 
+			settings to update the speed.
+		Should implement some kind of check on the type of input.
+		Also need to think about how to handle the impending separation
+		of axes.
 		"""
-		motor_active = self.active_motor_checkbox.GetValue()
-		if motor_active:
-			self.PushStatusText('Limit sequence activated.')
-			self.motor.GoToLimit(polarity='-', wait=False)
-		else:
-			self.PushStatusText('No active motor. No sequence activated.')
+		new_speed = float(self.speed_input.GetValue())
+		#convert new speed to steps/s
+		new_speed_steps = new_speed*800
 
+		self.motor.device.Write('HSPDY=' + str(new_speed_steps))
+		print('New speed is ' + self.motor.device.Write('HSPDY') + ' steps/s')
+		
 	def OnStopButton(self, event):
 		"""
 
@@ -73,6 +75,7 @@ class TheFrame(wx.Frame):
 			self.PushStatusText('Stop sequence requested!')
 			# do something to interrupt the motor and stop it immediately!
 			self.motor.Abort()
+			position = float(self.motor.device.Write('PY'))/800
 		else:
 			self.PushStatusText('No active motor to stop.')
 
@@ -97,11 +100,15 @@ class TheFrame(wx.Frame):
 		if activate_success:
 			print('axis %s is active' % motor.axis)
 			self.PushStatusText('motor activated on %s axis' % motor.axis)
+			print('current motor high speed is %s steps/s' % motor.hspd)
+			self.speed_input.ChangeValue(str(motor.hspd/800))
+			position = float(motor.device.Write('PY'))/800
 		else:
 			print('axis %s did not turn on' % motor.axis)
 
 		
 		return arc, motor
+
 
 	def DeactivateMotor(self, motor, device): # call should be like DeactivateMotor(self, motor)g
 		deactivate_success = motor.TurnMotorOff()
@@ -114,10 +121,9 @@ class TheFrame(wx.Frame):
 			print('deactivation and closing not successful')
 			return 0
 
-
 class TheApp(wx.App):
 	def OnInit(self):
-		self.frame = TheFrame(None, title='Limit finder.')
+		self.frame = TheFrame(None, title='Testing Joystick Control.')
 		self.SetTopWindow(self.frame)
 		self.frame.Show()
 
