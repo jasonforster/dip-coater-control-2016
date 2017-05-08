@@ -84,6 +84,52 @@ class TheFrame(wx.Frame):
 			self.PushStatusText('No active motor to stop.')
 
 
+	def OnUpButtonPress(self, event):
+		"""
+		This event handler detects when the user left clicks on the up button
+		and initiates a motor jog in the up direction if the motor is active.
+		"""
+		motor_active = self.active_motor_checkbox.GetValue()
+		if motor_active:
+			self.motor.device.Write('JY-')
+		else:
+			self.PushStatusText('Motor is not active. Cannot move.')
+
+		event.Skip()
+
+	def OnUpButtonRelease(self, event):
+		"""
+		This event handler stops the motor motion when the up button is released.
+		"""
+		motor_active = self.active_motor_checkbox.GetValue()
+		if motor_active:
+			self.motor.device.Write('JF')
+		else:
+			self.PushStatusText('Motor is not active. Nothing to stop.')
+
+	def OnDownButtonPress(self, event):
+		"""
+		This event handler detects when the user left clicks on the down button
+		and initiates a motor jog in the down direction if the motor is active.
+		"""
+		motor_active = self.active_motor_checkbox.GetValue()
+		if motor_active:
+			self.motor.device.Write('JY+')
+		else:
+			self.PushStatusText('Motor is not active. Cannot move.')
+
+		event.Skip()
+
+	def OnDownButtonRelease(self, event):
+		"""
+		This event handler stops the motor motion when the down button is released.
+		"""
+		motor_active = self.active_motor_checkbox.GetValue()
+		if motor_active:
+			self.motor.device.Write('JF')
+		else:
+			self.PushStatusText('Motor is not active. Nothing to stop.')
+
 	def ActivateMotor(self, active_axis='Y'):
 		"""
 		This method is called when the enable motor checkbox is checked.
