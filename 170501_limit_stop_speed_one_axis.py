@@ -17,27 +17,26 @@ class TheFrame(wx.Frame):
 		self.active_motor_checkbox = wx.CheckBox(self, wx.ID_ANY, label='Enable Motor?')
 		self.speed_label = wx.StaticText(self, wx.ID_ANY, label='Motor Speed (mm/s)')
 		self.speed_input = wx.TextCtrl(self, wx.ID_ANY)
+		self.position_label = wx.StaticText(self, wx.ID_ANY, label='Motor Position (mm)')
+		self.position_indicator = wx.TextCtrl(self, wx.ID_ANY)
+		self.limit_button = wx.Button(self, wx.ID_ANY, label='Go To Minus Limit')
 		self.stop_button = wx.Button(self, wx.ID_ANY,   label='STOP!')
-		self.up_button = wx.Button(self, wx.ID_ANY, label='UP')
-		self.down_button = wx.Button(self, wx.ID_ANY, label='DOWN')
 
 		sizer.Add(self.active_motor_checkbox, 0, wx.ALL, 5)
 		sizer.Add(self.speed_label, 0, wx.ALL, 5)
 		sizer.Add(self.speed_input, 0, wx.ALL, 5)
+		sizer.Add(self.position_label, 0, wx.ALL, 5)
+		sizer.Add(self.position_indicator, 0, wx.ALL, 5)
+		sizer.Add(self.limit_button, 0, wx.ALL, 5)
 		sizer.Add(self.stop_button, 0, wx.ALL, 5)
-		sizer.Add(self.up_button, 0, wx.ALL, 5)
-		sizer.Add(self.down_button, 0, wx.ALL, 5)
 
 		self.SetSizer(sizer)
 
 		# Bind events to the buttons and input boxes
 		self.Bind(wx.EVT_CHECKBOX, self.OnCheckActivate, self.active_motor_checkbox)
 		self.Bind(wx.EVT_TEXT_ENTER, self.OnSpeedInput, self.speed_input)
+		self.Bind(wx.EVT_BUTTON, self.OnLimitButton, self.limit_button)
 		self.Bind(wx.EVT_BUTTON, self.OnStopButton, self.stop_button)
-		self.up_button.Bind(wx.EVT_LEFT_DOWN, self.OnUpButtonPress)
-		self.up_button.Bind(wx.EVT_LEFT_UP, self.OnUpButtonRelease)
-		self.down_button.Bind(wx.EVT_LEFT_DOWN, self.OnDownButtonPress)
-		self.down_button.Bind(wx.EVT_LEFT_UP, self.OnDownButtonRelease)
 
 
 	def OnCheckActivate(self, event):
@@ -70,6 +69,33 @@ class TheFrame(wx.Frame):
 		self.motor.device.Write('HSPDY=' + str(new_speed_steps))
 		print('New speed is ' + self.motor.device.Write('HSPDY') + ' steps/s')
 		
+
+
+	def OnLimitButton(self, event):
+		"""
+		There are a number of things that should occur when this function
+		is called.
+		1. There should be a check that there is an active stepper channel.
+		2. If the check in step one is passed, the method to move the motor to 
+			its minus limit should be called.
+		"""
+		motor_active = self.active_motor_checkbox.GetValue()
+		if motor_active:
+			self.PushStatusText('Limit sequence activated.')
+			self.motor.GoToLimit(polarity='-', wait=False)
+			#Test to see if the motor is still moving. If it is, the position_indicator
+			# is updated until it stops.
+			is_moving = self.motor.IsMoving()
+			# while is_moving:
+			# 	print('motor is moving')
+			# 	position = float(self.motor.device.Write('PY'))/800
+			# 	self.position_indicator.ChangeValue(str(position))
+			# 	# self.position_indicator.Refresh()
+			# 	is_moving = self.motor.IsMoving()
+			# print('motor stopped')
+		else:
+			self.PushStatusText('No active motor. No sequence activated.')
+
 	def OnStopButton(self, event):
 		"""
 
@@ -80,57 +106,10 @@ class TheFrame(wx.Frame):
 			# do something to interrupt the motor and stop it immediately!
 			self.motor.Abort()
 			position = float(self.motor.device.Write('PY'))/800
+			self.position_indicator.ChangeValue(str(position))
 		else:
 			self.PushStatusText('No active motor to stop.')
 
-
-	def OnUpButtonPress(self, event):
-		"""
-		This event handler detects when the user left clicks on the up button
-		and initiates a motor jog in the up direction if the motor is active.
-		"""
-		motor_active = self.active_motor_checkbox.GetValue()
-		if motor_active:
-			self.motor.device.Write('JY-')
-			self.PushStatusText('Jogging up.')
-		else:
-			self.PushStatusText('Motor is not active. Cannot move.')
-
-		event.Skip()
-
-	def OnUpButtonRelease(self, event):
-		"""
-		This event handler stops the motor motion when the up button is released.
-		"""
-		motor_active = self.active_motor_checkbox.GetValue()
-		if motor_active:
-			self.motor.device.Write('JF')
-			self.PushStatusText('Jogging finished.')
-		else:
-			self.PushStatusText('Motor is not active. Nothing to stop.')
-
-	def OnDownButtonPress(self, event):
-		"""
-		This event handler detects when the user left clicks on the down button
-		and initiates a motor jog in the down direction if the motor is active.
-		"""
-		motor_active = self.active_motor_checkbox.GetValue()
-		if motor_active:
-			self.motor.device.Write('JY+')
-		else:
-			self.PushStatusText('Motor is not active. Cannot move.')
-
-		event.Skip()
-
-	def OnDownButtonRelease(self, event):
-		"""
-		This event handler stops the motor motion when the down button is released.
-		"""
-		motor_active = self.active_motor_checkbox.GetValue()
-		if motor_active:
-			self.motor.device.Write('JF')
-		else:
-			self.PushStatusText('Motor is not active. Nothing to stop.')
 
 	def ActivateMotor(self, active_axis='Y'):
 		"""
@@ -155,12 +134,12 @@ class TheFrame(wx.Frame):
 			print('current motor high speed is %s steps/s' % motor.hspd)
 			self.speed_input.ChangeValue(str(motor.hspd/800))
 			position = float(motor.device.Write('PY'))/800
+			self.position_indicator.ChangeValue(str(position))
 		else:
 			print('axis %s did not turn on' % motor.axis)
 
 		
 		return arc, motor
-
 
 	def DeactivateMotor(self, motor, device): # call should be like DeactivateMotor(self, motor)g
 		deactivate_success = motor.TurnMotorOff()
@@ -173,9 +152,10 @@ class TheFrame(wx.Frame):
 			print('deactivation and closing not successful')
 			return 0
 
+
 class TheApp(wx.App):
 	def OnInit(self):
-		self.frame = TheFrame(None, title='Testing Joystick Control.')
+		self.frame = TheFrame(None, title='Limit finder, speed setter.')
 		self.SetTopWindow(self.frame)
 		self.frame.Show()
 
