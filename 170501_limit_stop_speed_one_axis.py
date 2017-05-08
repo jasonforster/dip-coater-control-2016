@@ -39,17 +39,6 @@ class TheFrame(wx.Frame):
 		self.Bind(wx.EVT_BUTTON, self.OnStopButton, self.stop_button)
 
 
-	def GetPosition_mm(self):
-		"""
-		Function for getting the current motor position in mm.
-		The position is returned as a float with mm as the units.
-
-		"""
-		position_steps = self.motor.device.Write('PX')
-		position_mm = float(position_steps)/800
-
-		return position_mm
-
 	def OnCheckActivate(self, event):
 		"""
 		Checking this button should initialize one of the motors on the dip coater with 
@@ -104,7 +93,6 @@ class TheFrame(wx.Frame):
 			# 	# self.position_indicator.Refresh()
 			# 	is_moving = self.motor.IsMoving()
 			# print('motor stopped')
-
 		else:
 			self.PushStatusText('No active motor. No sequence activated.')
 
