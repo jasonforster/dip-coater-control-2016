@@ -95,7 +95,6 @@ class TheFrame(wx.Frame):
 			self.PushStatusText('Jogging up.')
 		else:
 			self.PushStatusText('Motor is not active. Cannot move.')
-
 		event.Skip()
 
 	def OnUpButtonRelease(self, event):
@@ -108,6 +107,7 @@ class TheFrame(wx.Frame):
 			self.PushStatusText('Jogging finished.')
 		else:
 			self.PushStatusText('Motor is not active. Nothing to stop.')
+		event.Skip()
 
 	def OnDownButtonPress(self, event):
 		"""
@@ -119,7 +119,6 @@ class TheFrame(wx.Frame):
 			self.motor.device.Write('JY+')
 		else:
 			self.PushStatusText('Motor is not active. Cannot move.')
-
 		event.Skip()
 
 	def OnDownButtonRelease(self, event):
@@ -131,6 +130,7 @@ class TheFrame(wx.Frame):
 			self.motor.device.Write('JF')
 		else:
 			self.PushStatusText('Motor is not active. Nothing to stop.')
+		event.Skip()
 
 	def ActivateMotor(self, active_axis='Y'):
 		"""
