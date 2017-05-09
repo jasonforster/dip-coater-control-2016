@@ -34,6 +34,7 @@ class TheFrame(wx.Frame):
 		self.Bind(wx.EVT_CHECKBOX, self.OnCheckActivate, self.active_motor_checkbox)
 		self.Bind(wx.EVT_TEXT_ENTER, self.OnSpeedInput, self.speed_input)
 		self.Bind(wx.EVT_BUTTON, self.OnStopButton, self.stop_button)
+
 		self.up_button.Bind(wx.EVT_LEFT_DOWN, self.OnUpButtonPress)
 		self.up_button.Bind(wx.EVT_LEFT_UP, self.OnUpButtonRelease)
 		self.down_button.Bind(wx.EVT_LEFT_DOWN, self.OnDownButtonPress)

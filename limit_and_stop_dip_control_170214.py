@@ -60,7 +60,7 @@ class TheFrame(wx.Frame):
 		motor_active = self.active_motor_checkbox.GetValue()
 		if motor_active:
 			self.PushStatusText('Limit sequence activated.')
-			self.motor.GoToLimit(polarity = '-')
+			self.motor.GoToLimit(polarity='-', wait=False)
 		else:
 			self.PushStatusText('No active motor. No sequence activated.')
 
@@ -72,6 +72,7 @@ class TheFrame(wx.Frame):
 		if motor_active:
 			self.PushStatusText('Stop sequence requested!')
 			# do something to interrupt the motor and stop it immediately!
+			self.motor.Abort()
 		else:
 			self.PushStatusText('No active motor to stop.')
 
