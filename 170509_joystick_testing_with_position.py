@@ -17,6 +17,9 @@ class TheFrame(wx.Frame):
 		self.active_motor_checkbox = wx.CheckBox(self, wx.ID_ANY, label='Enable Motor?')
 		self.speed_label = wx.StaticText(self, wx.ID_ANY, label='Motor Speed (mm/s)')
 		self.speed_input = wx.TextCtrl(self, wx.ID_ANY)
+		self.position_label = wx.StaticText(self, wx.ID_ANY, label='Motor Position (mm)')
+		self.position_indicator = wx.TextCtrl(self, wx.ID_ANY)
+		self.limit_button = wx.Button(self, wx.ID_ANY, label='Go to minus limit')
 		self.stop_button = wx.Button(self, wx.ID_ANY,   label='STOP!')
 		self.up_button = wx.Button(self, wx.ID_ANY, label='UP')
 		self.down_button = wx.Button(self, wx.ID_ANY, label='DOWN')
@@ -24,6 +27,9 @@ class TheFrame(wx.Frame):
 		sizer.Add(self.active_motor_checkbox, 0, wx.ALL, 5)
 		sizer.Add(self.speed_label, 0, wx.ALL, 5)
 		sizer.Add(self.speed_input, 0, wx.ALL, 5)
+		sizer.Add(self.position_label, 0, wx.ALL, 5)
+		sizer.Add(self.position_indicator, 0, wx.ALL, 5)
+		sizer.Add(self.limit_button, 0, wx.ALL, 5)
 		sizer.Add(self.stop_button, 0, wx.ALL, 5)
 		sizer.Add(self.up_button, 0, wx.ALL, 5)
 		sizer.Add(self.down_button, 0, wx.ALL, 5)
@@ -34,12 +40,25 @@ class TheFrame(wx.Frame):
 		self.Bind(wx.EVT_CHECKBOX, self.OnCheckActivate, self.active_motor_checkbox)
 		self.Bind(wx.EVT_TEXT_ENTER, self.OnSpeedInput, self.speed_input)
 		self.Bind(wx.EVT_BUTTON, self.OnStopButton, self.stop_button)
-
 		self.up_button.Bind(wx.EVT_LEFT_DOWN, self.OnUpButtonPress)
 		self.up_button.Bind(wx.EVT_LEFT_UP, self.OnUpButtonRelease)
 		self.down_button.Bind(wx.EVT_LEFT_DOWN, self.OnDownButtonPress)
 		self.down_button.Bind(wx.EVT_LEFT_UP, self.OnDownButtonRelease)
+		self.Bind(wx.EVT_BUTTON, self.OnLimitButton, self.limit_button)
 
+	def GetPosition_mm(self):
+		"""
+		This helper function gets the position of the indicated axis and returns
+		a string with the position in units of mm.
+		NOTE: you cannot call this function from the activation event handler because
+		there will not be a self.motor object until that handler is finished.
+		"""
+		isOn = self.motor.device.Write('EO2')
+		if isOn:
+			position = float(self.motor.device.Write('PY'))/800
+		else:
+			self.PushStatusText('Motor in not enabled. Unaware of position.')
+		return str(position)
 
 	def OnCheckActivate(self, event):
 		"""
@@ -49,7 +68,7 @@ class TheFrame(wx.Frame):
 		checked = self.active_motor_checkbox.GetValue()
 		if checked:
 			self.device, self.motor = self.ActivateMotor(active_axis='Y')
-			# self.PushStatusText('Motor Enabled.')
+			self.PushStatusText('Motor Enabled.')
 		else:
 			self.DeactivateMotor(self.motor, self.device)
 			del self.motor
@@ -71,6 +90,23 @@ class TheFrame(wx.Frame):
 		self.motor.device.Write('HSPDY=' + str(new_speed_steps))
 		print('New speed is ' + self.motor.device.Write('HSPDY') + ' steps/s')
 		
+	def OnLimitButton(self, event):
+		"""
+		There are a number of things that should occur when this function
+		is called.
+		1. There should be a check that there is an active stepper channel.
+		2. If the check in step one is passed, the method to move the motor to 
+			its minus limit should be called.
+		"""
+		motor_active = self.active_motor_checkbox.GetValue()
+		if motor_active:
+			self.PushStatusText('Limit sequence activated.')
+			self.motor.GoToLimit(polarity='-', wait=False)
+		else:
+			self.PushStatusText('No active motor. No sequence activated.')
+
+
+
 	def OnStopButton(self, event):
 		"""
 
@@ -80,7 +116,7 @@ class TheFrame(wx.Frame):
 			self.PushStatusText('Stop sequence requested!')
 			# do something to interrupt the motor and stop it immediately!
 			self.motor.Abort()
-			position = float(self.motor.device.Write('PY'))/800
+			self.position_indicator.ChangeValue(self.GetPosition_mm())
 		else:
 			self.PushStatusText('No active motor to stop.')
 
@@ -106,6 +142,7 @@ class TheFrame(wx.Frame):
 		if motor_active:
 			self.motor.device.Write('JF')
 			self.PushStatusText('Jogging finished.')
+			self.position_indicator.ChangeValue(self.GetPosition_mm())
 		else:
 			self.PushStatusText('Motor is not active. Nothing to stop.')
 		event.Skip()
@@ -129,6 +166,7 @@ class TheFrame(wx.Frame):
 		motor_active = self.active_motor_checkbox.GetValue()
 		if motor_active:
 			self.motor.device.Write('JF')
+			self.position_indicator.ChangeValue(self.GetPosition_mm())
 		else:
 			self.PushStatusText('Motor is not active. Nothing to stop.')
 		event.Skip()
